@@ -506,3 +506,70 @@ Trigger reviews by mentioning the bot in PR comments:
 ## License
 
 MIT
+
+---
+
+## Local Development
+
+### Setup
+
+```bash
+# Install dependencies
+bun install
+
+# Set your API key (choose one)
+export ANTHROPIC_API_KEY=your_key_here  # for Claude
+export OPENROUTER_API_KEY=your_key_here # for OpenRouter
+```
+
+### Run Local Code Review
+
+Test the code review agent on your local codebase:
+
+```bash
+# Review all changes from main branch
+bun run review
+
+# Review specific provider
+PROVIDER=openrouter:@preset/claude-code-github-action bun run review
+```
+
+### Development Commands
+
+```bash
+# Type checking
+bun run typecheck
+
+# Linting
+bun run lint
+
+# Auto-fix lint issues
+bun run lint:fix
+
+# Format code
+bun run format
+
+# Build for production
+bun run build
+```
+
+### `.claude` Directory
+
+The agent uses the `.claude/` directory for configuration:
+
+```
+.claude/
+├── prompt.md          # System prompt for code reviewer
+├── skills/            # Skill definitions
+│   ├── security-review.md
+│   ├── typescript-review.md
+│   └── github-actions-review.md
+└── CLAUDE.md          # Project-specific context
+```
+
+The Claude Agent SDK automatically loads:
+- `prompt.md` → System prompt
+- `skills/*.md` → Available skills
+- `CLAUDE.md` → Project context
+
+You can customize the review behavior by editing these files.

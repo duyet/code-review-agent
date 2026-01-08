@@ -6,6 +6,7 @@
   "scripts": {
     "build": "ncc build src/index.ts -o dist --source-map",
     "dev": "bun run src/index.ts",
+    "review": "bun run src/local-review.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/",
     "format": "biome format --write src/",

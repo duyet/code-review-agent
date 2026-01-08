@@ -29989,7 +29989,10 @@ async function run() {
         core.info(`Starting code review for PR #${context.issue.number}...`);
         // Fix for ncc-bundled environments: ensure SDK can spawn node processes
         // In bundled code, 'node' may not be in PATH when SDK tries to spawn subprocesses
-        process.env.NODE = process.execPath;
+        // Only set if not already configured to avoid overriding explicit settings
+        if (!process.env.NODE) {
+            process.env.NODE = process.execPath;
+        }
         const reviewId = "";
         const commentCount = 0;
         // Use V1 query with full options
@@ -30116,9 +30119,10 @@ const github = __importStar(__nccwpck_require__(3228));
 const claude_agent_sdk_1 = __nccwpck_require__(9951);
 const zod_1 = __nccwpck_require__(924);
 // Initialize GitHub client
+// Note: GITHUB_TOKEN is validated in config.ts, but we also check here for earlier failure detection
 const githubToken = process.env.GITHUB_TOKEN;
 if (!githubToken) {
-    throw new Error("GITHUB_TOKEN environment variable is required");
+    throw new Error("GITHUB_TOKEN environment variable is required (expected in GitHub Actions runtime)");
 }
 const octokit = github.getOctokit(githubToken);
 const context = github.context;
@@ -30362,7 +30366,7 @@ exports.githubMcpServer = (0, claude_agent_sdk_1.createSdkMcpServer)({
                 };
             }
             catch (error) {
-                const errorMessage = error instanceof Error ? error.message : "Unknown error";
+                const errorMessage = error instanceof Error ? error.message : String(error);
                 return {
                     content: [
                         {
