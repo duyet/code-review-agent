@@ -2,10 +2,9 @@
   "name": "code-review-agent",
   "version": "1.0.0",
   "description": "AI-powered code review GitHub Action using Claude Agent SDK",
-  "type": "module",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.cjs --format cjs --target node",
+    "build": "ncc build src/index.ts -o dist --source-map",
     "dev": "bun run src/index.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/",
@@ -24,6 +23,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^20.0.0",
+    "@vercel/ncc": "^0.38.4",
     "typescript": "^5.0.0"
   },
   "engines": {
