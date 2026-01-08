@@ -2,7 +2,7 @@ import * as core from "@actions/core";
 import type { Config } from "./types.js";
 
 export function loadConfig(): Config {
-  const provider = core.getInput("provider") || "claude";
+  const provider = core.getInput("provider") || "openrouter:openrouter/auto";
   const githubToken = process.env.GITHUB_TOKEN;
 
   if (!githubToken) {

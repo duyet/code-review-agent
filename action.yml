@@ -6,7 +6,7 @@ inputs:
   provider:
     description: 'LLM provider (claude, anthropic, openrouter:<model>)'
     required: false
-    default: 'claude'
+    default: 'openrouter:openrouter/auto'
   prompt:
     description: 'Custom review prompt/instructions'
     required: false

@@ -30426,7 +30426,7 @@ exports.loadConfig = loadConfig;
 exports.validateConfig = validateConfig;
 const core = __importStar(__nccwpck_require__(7484));
 function loadConfig() {
-    const provider = core.getInput("provider") || "claude";
+    const provider = core.getInput("provider") || "openrouter:openrouter/auto";
     const githubToken = process.env.GITHUB_TOKEN;
     if (!githubToken) {
         throw new Error("GITHUB_TOKEN environment variable is required");
