@@ -48,6 +48,36 @@ AI-powered code review GitHub Action using Claude.
 - Mention triggers (`@duyetbot review`)
 - Custom prompts for focused reviews
 
+## Quick Install
+
+Create a workflow file in `.github/workflows/code-review.yml`:
+
+```yaml
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    uses: duyet/code-review-agent/.github/workflows/callable-code-review.yml@main
+    with:
+      provider: openrouter/auto  # Auto-routes to best model
+    secrets:
+      api-key: ${{ secrets.OPENROUTER_API_KEY }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Required secrets:**
+- `OPENROUTER_API_KEY` - Get from [openrouter.ai](https://openrouter.ai)
+
+**Optional:** Add `GITHUB_TOKEN` is automatically provided by GitHub Actions.
+
+---
+
 ## Reusable Workflows
 
 You can also use our **reusable workflows** for simpler setup:
