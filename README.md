@@ -524,15 +524,56 @@ export OPENROUTER_API_KEY=your_key_here # for OpenRouter
 
 ### Run Local Code Review
 
-Test the code review agent on your local codebase:
+Test the code review agent on your local codebase without needing a GitHub PR:
 
 ```bash
-# Review all changes from main branch
+# Review changes from current branch (vs main or HEAD~1)
 bun run review
 
-# Review specific provider
-PROVIDER=openrouter:@preset/claude-code-github-action bun run review
+# Specify a different provider
+PROVIDER=openrouter:anthropic/claude-sonnet-4-5-20250929 bun run review
+PROVIDER=anthropic bun run review
+
+# Use OpenRouter auto-routing (tries best available model)
+PROVIDER=openrouter:openrouter/auto bun run review
 ```
+
+#### Local Review Features
+
+The local review mode:
+- Auto-detects changed files using `git diff` (compares against `main` or `HEAD~1`)
+- Focuses analysis only on changed files (not the entire codebase)
+- Provides the same severity-based findings as GitHub PR reviews
+- Tracks API costs and displays them at completion
+- Supports custom prompts via `.claude/prompt.md`
+
+#### Custom Review Prompts
+
+Create `.claude/prompt.md` to customize review focus:
+
+```markdown
+# Security-Focused Review
+
+Review this code specifically for:
+- SQL injection vulnerabilities
+- Authentication/authorization issues
+- Secrets or API keys in code
+- Unsafe command execution
+- Cross-site scripting (XSS) risks
+```
+
+#### Environment Variables for Local Review
+
+Create `.env.local` for persistent settings:
+
+```bash
+# .env.local
+PROVIDER=openrouter:anthropic/claude-sonnet-4-5-20250929
+OPENROUTER_API_KEY=sk-or-v1-...
+GITHUB_TOKEN=ghp_...
+```
+
+Then run: `bun run review`
 
 ### Development Commands
 
