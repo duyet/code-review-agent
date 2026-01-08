@@ -1,0 +1,72 @@
+name: Reusable Bun CI
+
+on:
+  workflow_call:
+    inputs:
+      bun-version:
+        description: "Bun runtime version"
+        required: false
+        type: string
+        default: "latest"
+      run-typecheck:
+        description: "Run TypeScript typecheck"
+        required: false
+        type: boolean
+        default: true
+      run-lint:
+        description: "Run ESLint"
+        required: false
+        type: boolean
+        default: false
+      run-test:
+        description: "Run tests"
+        required: false
+        type: boolean
+        default: false
+      run-build:
+        description: "Run build"
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      result:
+        description: "CI result"
+        value: ${{ jobs.ci.outputs.result }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      result: ${{ steps.result.outputs.value }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ inputs.bun-version }}
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Typecheck
+        if: inputs.run-typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        if: inputs.run-lint
+        run: bun run lint
+
+      - name: Test
+        if: inputs.run-test
+        run: bun run test
+
+      - name: Build
+        if: inputs.run-build
+        run: bun run build
+
+      - name: Set result
+        id: result
+        run: echo "value=success" >> $GITHUB_OUTPUT

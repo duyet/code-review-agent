@@ -1,0 +1,87 @@
+name: Reusable Code Review
+
+on:
+  workflow_call:
+    inputs:
+      provider:
+        description: "Model provider (default: openrouter/auto for auto-routing)"
+        required: false
+        type: string
+        default: "openrouter/auto"
+      prompt:
+        description: "Custom review instructions"
+        required: false
+        type: string
+        default: ""
+      github-username:
+        description: "Bot username for @mentions (without @)"
+        required: false
+        type: string
+        default: "duyetbot"
+      review-on-open:
+        description: "Review when PR opens"
+        required: false
+        type: boolean
+        default: true
+      review-on-update:
+        description: "Review when PR updates"
+        required: false
+        type: boolean
+        default: false
+      max-budget-usd:
+        description: "Max cost per review in USD"
+        required: false
+        type: number
+        default: 1.0
+    secrets:
+      api-key:
+        required: true
+      github-token:
+        required: true
+    outputs:
+      review-id:
+        description: "Review ID"
+        value: ${{ jobs.review.outputs.review-id }}
+      comment-count:
+        description: "Number of inline comments"
+        value: ${{ jobs.review.outputs.comment-count }}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    outputs:
+      review-id: ${{ steps.review.outputs.review-id }}
+      comment-count: ${{ steps.review.outputs.comment-count }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build action
+        run: bun run build
+
+      - name: Run Code Review
+        id: review
+        uses: ././
+        with:
+          provider: ${{ inputs.provider }}
+          prompt: ${{ inputs.prompt }}
+          github-username: ${{ inputs.github-username }}
+          review-on-open: ${{ inputs.review-on-open }}
+          review-on-update: ${{ inputs.review-on-update }}
+          max-budget-usd: ${{ inputs.max-budget-usd }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.api-key }}
+          ANTHROPIC_API_KEY: ${{ secrets.api-key }}
+          GITHUB_TOKEN: ${{ secrets.github-token }}

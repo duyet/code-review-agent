@@ -48,6 +48,112 @@ AI-powered code review GitHub Action using Claude.
 - Mention triggers (`@duyetbot review`)
 - Custom prompts for focused reviews
 
+## Reusable Workflows
+
+You can also use our **reusable workflows** for simpler setup:
+
+<details>
+<summary><strong>Using OpenRouter with Auto-Routing</strong></summary>
+
+Uses `openrouter/auto` to automatically route to the best available model at no extra cost:
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    uses: duyet/code-review-agent/.github/workflows/callable-code-review.yml@main
+    with:
+      provider: openrouter/auto
+    secrets:
+      api-key: ${{ secrets.OPENROUTER_API_KEY }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</details>
+
+<details>
+<summary><strong>Using OpenRouter with Presets</strong></summary>
+
+Use a specific preset model for code review:
+
+```yaml
+jobs:
+  review:
+    uses: duyet/code-review-agent/.github/workflows/callable-code-review.yml@main
+    with:
+      provider: openrouter:@preset/claude-code-github-action
+      prompt: "Focus on security and performance"
+    secrets:
+      api-key: ${{ secrets.OPENROUTER_API_KEY }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</details>
+
+<details>
+<summary><strong>Using Anthropic Claude directly</strong></summary>
+
+```yaml
+jobs:
+  review:
+    uses: duyet/code-review-agent/.github/workflows/callable-code-review.yml@main
+    with:
+      provider: claude-sonnet-4-5-20250929
+      prompt: "Review for best practices"
+    secrets:
+      api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</details>
+
+<details>
+<summary><strong>Bun CI Workflow</strong></summary>
+
+Reusable CI pipeline for Bun projects:
+
+```yaml
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: duyet/code-review-agent/.github/workflows/callable-bun-ci.yml@main
+    with:
+      bun-version: "1.1.0"
+      run-typecheck: true
+      run-lint: true
+```
+
+</details>
+
+<details>
+<summary><strong>Bun Release Workflow</strong></summary>
+
+Automated release workflow for Bun projects:
+
+```yaml
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    uses: duyet/code-review-agent/.github/workflows/callable-bun-release.yml@main
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</details>
+
 ## Examples
 
 <details>

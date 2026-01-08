@@ -1,0 +1,67 @@
+name: Reusable Bun Release
+
+on:
+  workflow_call:
+    inputs:
+      bun-version:
+        description: "Bun runtime version"
+        required: false
+        type: string
+        default: "latest"
+      commit-dist:
+        description: "Commit dist/ back to branch"
+        required: false
+        type: boolean
+        default: true
+      dist-branch:
+        description: "Branch to commit dist to"
+        required: false
+        type: string
+        default: "main"
+      generate-notes:
+        description: "Auto-generate release notes"
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      github-token:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.github-token }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ inputs.bun-version }}
+
+      - name: Install and build
+        run: bun install && bun run build
+
+      - name: Commit dist
+        if: inputs.commit-dist
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -f dist/
+          git commit -m "chore: build dist for release" || true
+          git push origin HEAD:${{ inputs.dist-branch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+
+      - name: Create Release
+        if: inputs.generate-notes
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: ${{ inputs.generate-notes }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
