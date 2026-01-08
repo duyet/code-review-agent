@@ -28,6 +28,10 @@ async function run(): Promise<void> {
 
     core.info(`Starting code review for PR #${context.issue.number}...`);
 
+    // Fix for ncc-bundled environments: ensure SDK can spawn node processes
+    // In bundled code, 'node' may not be in PATH when SDK tries to spawn subprocesses
+    process.env.NODE = process.execPath;
+
     const reviewId = "";
     const commentCount = 0;
 

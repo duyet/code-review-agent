@@ -29987,6 +29987,9 @@ async function run() {
             return;
         }
         core.info(`Starting code review for PR #${context.issue.number}...`);
+        // Fix for ncc-bundled environments: ensure SDK can spawn node processes
+        // In bundled code, 'node' may not be in PATH when SDK tries to spawn subprocesses
+        process.env.NODE = process.execPath;
         const reviewId = "";
         const commentCount = 0;
         // Use V1 query with full options
@@ -30113,7 +30116,11 @@ const github = __importStar(__nccwpck_require__(3228));
 const claude_agent_sdk_1 = __nccwpck_require__(9951);
 const zod_1 = __nccwpck_require__(924);
 // Initialize GitHub client
-const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+const githubToken = process.env.GITHUB_TOKEN;
+if (!githubToken) {
+    throw new Error("GITHUB_TOKEN environment variable is required");
+}
+const octokit = github.getOctokit(githubToken);
 const context = github.context;
 // Store comments for batch submission
 let reviewComments = [];
@@ -30355,11 +30362,12 @@ exports.githubMcpServer = (0, claude_agent_sdk_1.createSdkMcpServer)({
                 };
             }
             catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "Unknown error";
                 return {
                     content: [
                         {
                             type: "text",
-                            text: `Failed to merge PR: ${error.message || "Unknown error"}`,
+                            text: `Failed to merge PR: ${errorMessage}`,
                         },
                     ],
                 };
@@ -30436,7 +30444,7 @@ function loadConfig() {
         githubUsername: core.getInput("github_username") || "@duyetbot",
         reviewOnOpen: core.getInput("review_on_open") !== "false",
         reviewOnUpdate: core.getInput("review_on_update") !== "false",
-        maxBudgetUsd: parseFloat(core.getInput("max_budget_usd") || "5.00"),
+        maxBudgetUsd: Number.parseFloat(core.getInput("max_budget_usd") || "5.00"),
         autoMerge: core.getInput("auto_merge") === "true",
         mergeMethod: (core.getInput("merge_method") || "merge"),
         anthropicApiKey: process.env.ANTHROPIC_API_KEY,

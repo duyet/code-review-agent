@@ -3,7 +3,11 @@ import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 
 // Initialize GitHub client
-const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
+const githubToken = process.env.GITHUB_TOKEN;
+if (!githubToken) {
+  throw new Error("GITHUB_TOKEN environment variable is required");
+}
+const octokit = github.getOctokit(githubToken);
 const context = github.context;
 
 // Store comments for batch submission
@@ -322,12 +326,13 @@ export const githubMcpServer = createSdkMcpServer({
               },
             ],
           };
-        } catch (error: any) {
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
           return {
             content: [
               {
                 type: "text",
-                text: `Failed to merge PR: ${error.message || "Unknown error"}`,
+                text: `Failed to merge PR: ${errorMessage}`,
               },
             ],
           };

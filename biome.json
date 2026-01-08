@@ -8,7 +8,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/.github"]
+    "include": ["**"]
   },
   "formatter": {
     "enabled": true,
@@ -18,7 +18,9 @@
     "lineEnding": "lf",
     "lineWidth": 100
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "organizeImports": {
+    "enabled": true
+  },
   "linter": {
     "enabled": true,
     "rules": {
