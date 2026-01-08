@@ -1,4 +1,4 @@
-import * as github from '@actions/github';
+import type * as github from "@actions/github";
 
 export type Octokit = ReturnType<typeof github.getOctokit>;
 
@@ -10,7 +10,7 @@ export interface Config {
   reviewOnUpdate: boolean;
   maxBudgetUsd: number;
   autoMerge: boolean;
-  mergeMethod: 'merge' | 'squash' | 'rebase';
+  mergeMethod: "merge" | "squash" | "rebase";
   anthropicApiKey?: string;
   openrouterApiKey?: string;
   githubToken: string;
