@@ -528,14 +528,12 @@ Test the code review agent on your local codebase without needing a GitHub PR:
 
 ```bash
 # Review changes from current branch (vs main or HEAD~1)
+# Uses openrouter:openrouter/auto by default (auto-routes to best available model)
 bun run review
 
 # Specify a different provider
 PROVIDER=openrouter:anthropic/claude-sonnet-4-5-20250929 bun run review
 PROVIDER=anthropic bun run review
-
-# Use OpenRouter auto-routing (tries best available model)
-PROVIDER=openrouter:openrouter/auto bun run review
 ```
 
 #### Local Review Features
@@ -568,12 +566,19 @@ Create `.env.local` for persistent settings:
 
 ```bash
 # .env.local
-PROVIDER=openrouter:anthropic/claude-sonnet-4-5-20250929
+# Default provider is openrouter:openrouter/auto (auto-routes to best available model)
+# Override with:
+PROVIDER=openrouter:openrouter/auto
 OPENROUTER_API_KEY=sk-or-v1-...
-GITHUB_TOKEN=ghp_...
+GITHUB_TOKEN=ghp_...  # Optional, not needed for local review
 ```
 
 Then run: `bun run review`
+
+**Note**: The `openrouter:openrouter/auto` provider is recommended for local reviews as it:
+- Automatically selects the best available model
+- No per-model cost difference
+- Great for development and testing
 
 ### Development Commands
 

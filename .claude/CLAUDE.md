@@ -289,9 +289,10 @@ cp .env.example .env.local
 ### Usage
 ```bash
 # Review changed files (detects from git diff)
+# Default provider: openrouter:openrouter/auto (auto-routes to best available model)
 bun run review
 
-# Specify provider (defaults to OpenRouter auto)
+# Override with a specific provider
 PROVIDER="openrouter:anthropic/claude-sonnet-4-5-20250929" bun run review
 PROVIDER="anthropic" bun run review
 ```
