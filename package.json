@@ -7,8 +7,9 @@
   "scripts": {
     "build": "bun build src/index.ts --outfile dist/index.js --target node --platform node --format cjs --external @actions/core --external @actions/github --external @anthropic-ai/claude-agent-sdk --external zod",
     "dev": "bun run src/index.ts",
-    "lint": "eslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --write src/",
+    "format": "biome format --write src/",
     "typecheck": "tsc --noEmit"
   },
   "keywords": ["github-action", "code-review", "claude", "ai", "bun"],
@@ -21,11 +22,8 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "prettier": "^3.0.0",
     "typescript": "^5.0.0"
   },
   "engines": {

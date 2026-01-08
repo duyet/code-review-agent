@@ -14,7 +14,7 @@ on:
         type: boolean
         default: true
       run-lint:
-        description: "Run ESLint"
+        description: "Run Biome linter"
         required: false
         type: boolean
         default: false
