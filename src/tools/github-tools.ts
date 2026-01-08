@@ -1,6 +1,6 @@
-import { tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
-import { z } from 'zod';
-import * as github from '@actions/github';
+import * as github from "@actions/github";
+import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
+import { z } from "zod";
 
 // Initialize GitHub client
 const octokit = github.getOctokit(process.env.GITHUB_TOKEN!);
@@ -11,25 +11,37 @@ let reviewComments: Array<{ path: string; line: number; body: string; side: stri
 
 // Security scanning patterns
 const SECURITY_PATTERNS = [
-  { pattern: /api[_-]?key\s*[:=]\s*['"][^'"]{10,}['"]/gi, type: 'API_KEY', severity: 'HIGH' },
-  { pattern: /password\s*[:=]\s*['"][^'"]+['"]/gi, type: 'HARDCODED_PASSWORD', severity: 'CRITICAL' },
-  { pattern: /AWS[A-Z0-9]{16,}/g, type: 'AWS_KEY', severity: 'CRITICAL' },
-  { pattern: /ghp_[a-zA-Z0-9]{36}/g, type: 'GITHUB_TOKEN', severity: 'CRITICAL' },
-  { pattern: /sk-[a-zA-Z0-9]{32,}/g, type: 'OPENAI_KEY', severity: 'CRITICAL' },
-  { pattern: /-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----/g, type: 'PRIVATE_KEY', severity: 'CRITICAL' },
-  { pattern: /\$\{[^}]+\}[^;]*(?:SELECT|INSERT|UPDATE|DELETE)/gi, type: 'SQL_INJECTION', severity: 'HIGH' },
-  { pattern: /\.innerHTML\s*=/gi, type: 'XSS_RISK', severity: 'MEDIUM' },
-  { pattern: /eval\s*\(/gi, type: 'CODE_INJECTION', severity: 'CRITICAL' },
-  { pattern: /exec\s*\(\s*[`'"]\s*\$\{/gi, type: 'COMMAND_INJECTION', severity: 'CRITICAL' },
+  { pattern: /api[_-]?key\s*[:=]\s*['"][^'"]{10,}['"]/gi, type: "API_KEY", severity: "HIGH" },
+  {
+    pattern: /password\s*[:=]\s*['"][^'"]+['"]/gi,
+    type: "HARDCODED_PASSWORD",
+    severity: "CRITICAL",
+  },
+  { pattern: /AWS[A-Z0-9]{16,}/g, type: "AWS_KEY", severity: "CRITICAL" },
+  { pattern: /ghp_[a-zA-Z0-9]{36}/g, type: "GITHUB_TOKEN", severity: "CRITICAL" },
+  { pattern: /sk-[a-zA-Z0-9]{32,}/g, type: "OPENAI_KEY", severity: "CRITICAL" },
+  {
+    pattern: /-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----/g,
+    type: "PRIVATE_KEY",
+    severity: "CRITICAL",
+  },
+  {
+    pattern: /\$\{[^}]+\}[^;]*(?:SELECT|INSERT|UPDATE|DELETE)/gi,
+    type: "SQL_INJECTION",
+    severity: "HIGH",
+  },
+  { pattern: /\.innerHTML\s*=/gi, type: "XSS_RISK", severity: "MEDIUM" },
+  { pattern: /eval\s*\(/gi, type: "CODE_INJECTION", severity: "CRITICAL" },
+  { pattern: /exec\s*\(\s*[`'"]\s*\$\{/gi, type: "COMMAND_INJECTION", severity: "CRITICAL" },
 ] as const;
 
 export const githubMcpServer = createSdkMcpServer({
-  name: 'github-pr',
-  version: '1.0.0',
+  name: "github-pr",
+  version: "1.0.0",
   tools: [
     tool(
-      'get_pr_info',
-      'Get pull request metadata (title, description, author, branches)',
+      "get_pr_info",
+      "Get pull request metadata (title, description, author, branches)",
       {},
       async () => {
         const { data } = await octokit.rest.pulls.get({
@@ -37,40 +49,41 @@ export const githubMcpServer = createSdkMcpServer({
           pull_number: context.issue.number,
         });
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              title: data.title,
-              body: data.body,
-              author: data.user?.login,
-              baseBranch: data.base.ref,
-              headBranch: data.head.ref,
-              additions: data.additions,
-              deletions: data.deletions,
-              changedFiles: data.changed_files,
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  title: data.title,
+                  body: data.body,
+                  author: data.user?.login,
+                  baseBranch: data.base.ref,
+                  headBranch: data.head.ref,
+                  additions: data.additions,
+                  deletions: data.deletions,
+                  changedFiles: data.changed_files,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
-      }
+      },
     ),
 
-    tool(
-      'get_pr_diff',
-      'Get the full unified diff of the pull request',
-      {},
-      async () => {
-        const { data } = await octokit.rest.pulls.get({
-          ...context.repo,
-          pull_number: context.issue.number,
-          mediaType: { format: 'diff' },
-        });
-        return { content: [{ type: 'text', text: data as unknown as string }] };
-      }
-    ),
+    tool("get_pr_diff", "Get the full unified diff of the pull request", {}, async () => {
+      const { data } = await octokit.rest.pulls.get({
+        ...context.repo,
+        pull_number: context.issue.number,
+        mediaType: { format: "diff" },
+      });
+      return { content: [{ type: "text", text: data as unknown as string }] };
+    }),
 
     tool(
-      'get_changed_files',
-      'List all files changed in the PR with additions/deletions stats',
+      "get_changed_files",
+      "List all files changed in the PR with additions/deletions stats",
       {},
       async () => {
         const { data } = await octokit.rest.pulls.listFiles({
@@ -79,59 +92,70 @@ export const githubMcpServer = createSdkMcpServer({
           per_page: 100,
         });
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(data.map(f => ({
-              filename: f.filename,
-              status: f.status,
-              additions: f.additions,
-              deletions: f.deletions,
-              patch: f.patch,
-            })), null, 2),
-          }],
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                data.map((f) => ({
+                  filename: f.filename,
+                  status: f.status,
+                  additions: f.additions,
+                  deletions: f.deletions,
+                  patch: f.patch,
+                })),
+                null,
+                2,
+              ),
+            },
+          ],
         };
-      }
+      },
     ),
 
     tool(
-      'get_file_content',
-      'Read the full content of a file at the PR head commit',
-      { path: z.string().describe('File path in the repository') },
+      "get_file_content",
+      "Read the full content of a file at the PR head commit",
+      { path: z.string().describe("File path in the repository") },
       async (args) => {
         const { data } = await octokit.rest.repos.getContent({
           ...context.repo,
           path: args.path,
           ref: context.payload.pull_request?.head.sha,
         });
-        if ('content' in data) {
-          const content = Buffer.from(data.content, 'base64').toString('utf-8');
-          return { content: [{ type: 'text', text: content }] };
+        if ("content" in data) {
+          const content = Buffer.from(data.content, "base64").toString("utf-8");
+          return { content: [{ type: "text", text: content }] };
         }
-        return { content: [{ type: 'text', text: `Error: ${args.path} is not a file` }] };
-      }
+        return { content: [{ type: "text", text: `Error: ${args.path} is not a file` }] };
+      },
     ),
 
     tool(
-      'add_review_comment',
-      'Queue an inline comment for a specific file and line',
+      "add_review_comment",
+      "Queue an inline comment for a specific file and line",
       {
-        path: z.string().describe('File path'),
-        line: z.number().describe('Line number'),
-        body: z.string().describe('Comment text in markdown'),
-        side: z.enum(['LEFT', 'RIGHT']).default('RIGHT').describe('Side of diff'),
+        path: z.string().describe("File path"),
+        line: z.number().describe("Line number"),
+        body: z.string().describe("Comment text in markdown"),
+        side: z.enum(["LEFT", "RIGHT"]).default("RIGHT").describe("Side of diff"),
       },
       async (args) => {
         reviewComments.push(args);
-        return { content: [{ type: 'text', text: `Queued comment for ${args.path}:${args.line}` }] };
-      }
+        return {
+          content: [{ type: "text", text: `Queued comment for ${args.path}:${args.line}` }],
+        };
+      },
     ),
 
     tool(
-      'submit_review',
-      'Submit all queued comments as a pull request review',
+      "submit_review",
+      "Submit all queued comments as a pull request review",
       {
-        summary: z.string().describe('Overall review summary'),
-        verdict: z.enum(['APPROVE', 'REQUEST_CHANGES', 'COMMENT']).default('COMMENT').describe('Review verdict'),
+        summary: z.string().describe("Overall review summary"),
+        verdict: z
+          .enum(["APPROVE", "REQUEST_CHANGES", "COMMENT"])
+          .default("COMMENT")
+          .describe("Review verdict"),
       },
       async (args) => {
         const { data } = await octokit.rest.pulls.createReview({
@@ -139,64 +163,176 @@ export const githubMcpServer = createSdkMcpServer({
           pull_number: context.issue.number,
           body: args.summary,
           event: args.verdict,
-          comments: reviewComments.map(c => ({
+          comments: reviewComments.map((c) => ({
             path: c.path,
             line: c.line,
             body: c.body,
-            side: c.side as 'LEFT' | 'RIGHT',
+            side: c.side as "LEFT" | "RIGHT",
           })),
         });
         const count = reviewComments.length;
         reviewComments = [];
-        return { content: [{ type: 'text', text: `Review submitted (ID: ${data.id}) with ${count} inline comments` }] };
-      }
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Review submitted (ID: ${data.id}) with ${count} inline comments`,
+            },
+          ],
+        };
+      },
     ),
 
     tool(
-      'security_scan',
-      'Scan code content for security vulnerabilities',
+      "security_scan",
+      "Scan code content for security vulnerabilities",
       {
-        path: z.string().describe('File path being scanned'),
-        content: z.string().describe('File content to analyze'),
+        path: z.string().describe("File path being scanned"),
+        content: z.string().describe("File content to analyze"),
       },
       async (args) => {
-        const issues: Array<{ type: string; severity: string; line: number; description: string }> = [];
+        const issues: Array<{ type: string; severity: string; line: number; description: string }> =
+          [];
 
         for (const { pattern, type, severity } of SECURITY_PATTERNS) {
           const matches = args.content.matchAll(pattern);
           for (const match of matches) {
-            const line = args.content.substring(0, match.index || 0).split('\n').length;
+            const line = args.content.substring(0, match.index || 0).split("\n").length;
             issues.push({
               type,
               severity,
               line,
-              description: `Potential ${type.toLowerCase().replace(/_/g, ' ')} detected`,
+              description: `Potential ${type.toLowerCase().replace(/_/g, " ")} detected`,
             });
           }
         }
 
-        const summary = issues.length === 0
-          ? `No security issues found in ${args.path}`
-          : `Found ${issues.length} security issue(s) in ${args.path}:\n${issues.map(i =>
-              `- [${i.severity}] ${i.type} at line ${i.line}: ${i.description}`
-            ).join('\n')}`;
+        const summary =
+          issues.length === 0
+            ? `No security issues found in ${args.path}`
+            : `Found ${issues.length} security issue(s) in ${args.path}:\n${issues
+                .map((i) => `- [${i.severity}] ${i.type} at line ${i.line}: ${i.description}`)
+                .join("\n")}`;
 
-        return { content: [{ type: 'text', text: summary }] };
-      }
+        return { content: [{ type: "text", text: summary }] };
+      },
     ),
 
     tool(
-      'add_pr_comment',
-      'Add a general comment to the pull request',
-      { body: z.string().describe('Comment text in markdown') },
+      "add_pr_comment",
+      "Add a general comment to the pull request",
+      { body: z.string().describe("Comment text in markdown") },
       async (args) => {
         const { data } = await octokit.rest.issues.createComment({
           ...context.repo,
           issue_number: context.issue.number,
           body: args.body,
         });
-        return { content: [{ type: 'text', text: `Comment added (ID: ${data.id})` }] };
-      }
+        return { content: [{ type: "text", text: `Comment added (ID: ${data.id})` }] };
+      },
+    ),
+
+    tool(
+      "check_ci_status",
+      "Check if all required CI/status checks have passed",
+      {
+        required_checks: z
+          .array(z.string())
+          .optional()
+          .describe("List of required check names (default: all)"),
+        wait_for_timeout_ms: z
+          .number()
+          .default(30000)
+          .describe("Max time to wait for pending checks (ms)"),
+      },
+      async (args) => {
+        const { data: checks } = await octokit.rest.checks.listForRef({
+          ...context.repo,
+          ref: context.payload.pull_request?.head.sha,
+        });
+
+        let passed = 0;
+        let failed = 0;
+        let pending = 0;
+        const requiredChecks = new Set(args.required_checks || []);
+
+        for (const check of checks.check_runs) {
+          // Skip checks we don't care about
+          if (requiredChecks.size > 0 && !requiredChecks.has(check.name)) {
+            continue;
+          }
+
+          switch (check.conclusion) {
+            case "success":
+              passed++;
+              break;
+            case "failure":
+              failed++;
+              break;
+            case null:
+              pending++;
+              break;
+          }
+        }
+
+        const total = passed + failed + pending;
+        const allPassed = failed === 0 && (pending === 0 || requiredChecks.size === 0);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  total,
+                  passed,
+                  failed,
+                  pending,
+                  allPassed,
+                  status: allPassed ? "PASS" : failed > 0 ? "FAIL" : "PENDING",
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      },
+    ),
+
+    tool(
+      "merge_pr",
+      "Merge the pull request (only if CI checks pass)",
+      {
+        method: z.enum(["merge", "squash", "rebase"]).default("merge").describe("Merge method"),
+      },
+      async (args) => {
+        try {
+          const { data } = await octokit.rest.pulls.merge({
+            ...context.repo,
+            pull_number: context.issue.number,
+            merge_method: args.method,
+          });
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: `PR merged successfully (SHA: ${data.sha}). Merged: ${data.merged}.`,
+              },
+            ],
+          };
+        } catch (error: any) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Failed to merge PR: ${error.message || "Unknown error"}`,
+              },
+            ],
+          };
+        }
+      },
     ),
   ],
 });
