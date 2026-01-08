@@ -57407,6 +57407,13 @@ async function run() {
   try {
     const config3 = loadConfig();
     const context4 = github2.context;
+    if (config3.provider.startsWith("openrouter:")) {
+      process.env.ANTHROPIC_BASE_URL = "https://openrouter.ai/api";
+      process.env.ANTHROPIC_AUTH_TOKEN = config3.openrouterApiKey || "";
+      process.env.ANTHROPIC_API_KEY = "";
+    } else if (config3.provider === "claude" || config3.provider === "anthropic") {
+      process.env.ANTHROPIC_API_KEY = config3.anthropicApiKey || "";
+    }
     if (!shouldRun(context4, config3)) {
       core3.info("Skipping: not a relevant event");
       return;

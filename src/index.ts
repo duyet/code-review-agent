@@ -10,6 +10,16 @@ async function run(): Promise<void> {
     const config = loadConfig();
     const context = github.context;
 
+    // Configure OpenRouter environment variables
+    if (config.provider.startsWith("openrouter:")) {
+      process.env.ANTHROPIC_BASE_URL = "https://openrouter.ai/api";
+      process.env.ANTHROPIC_AUTH_TOKEN = config.openrouterApiKey || "";
+      process.env.ANTHROPIC_API_KEY = ""; // Must be explicitly empty for OpenRouter
+    } else if (config.provider === "claude" || config.provider === "anthropic") {
+      // For Anthropic provider, set the API key
+      process.env.ANTHROPIC_API_KEY = config.anthropicApiKey || "";
+    }
+
     // Check if we should run
     if (!shouldRun(context, config)) {
       core.info("Skipping: not a relevant event");
