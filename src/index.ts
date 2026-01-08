@@ -87,8 +87,16 @@ function shouldRun(context: typeof github.context, config: { githubUsername: str
   return false;
 }
 
-function buildPrompt(config: { customPrompt?: string }): string {
-  const base = 'Review this pull request. Analyze the diff, identify issues, add inline comments, and submit a review.';
+function buildPrompt(config: { customPrompt?: string; autoMerge: boolean; mergeMethod: string }): string {
+  const autoMergeInstructions = config.autoMerge ? `
+## Auto-Merge Enabled
+This action has auto-merge enabled. After submitting your review:
+1. If verdict is APPROVE and no CRITICAL/HIGH issues: Use check_ci_status tool
+2. If CI checks pass: Use merge_pr tool with method="${config.mergeMethod}"
+3. If CI fails or verdict is REQUEST_CHANGES: Do not merge
+` : '';
+
+  const base = `Review this pull request. Analyze the diff, identify issues, add inline comments, and submit a review.${autoMergeInstructions}`;
   return config.customPrompt ? `${base}\n\nAdditional instructions: ${config.customPrompt}` : base;
 }
 

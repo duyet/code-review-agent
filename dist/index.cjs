@@ -162,6 +162,74 @@ ${issues.map((i) => `- [${i.severity}] ${i.type} at line ${i.line}: ${i.descript
         body: args.body
       });
       return { content: [{ type: "text", text: `Comment added (ID: ${data.id})` }] };
+    }),
+    import_claude_agent_sdk.tool("check_ci_status", "Check if all required CI/status checks have passed", {
+      required_checks: import_zod.z.array(import_zod.z.string()).optional().describe("List of required check names (default: all)"),
+      wait_for_timeout_ms: import_zod.z.number().default(30000).describe("Max time to wait for pending checks (ms)")
+    }, async (args) => {
+      const { data: checks } = await octokit.rest.checks.listForRef({
+        ...context2.repo,
+        ref: context2.payload.pull_request?.head.sha
+      });
+      let passed = 0;
+      let failed = 0;
+      let pending = 0;
+      const requiredChecks = new Set(args.required_checks || []);
+      for (const check of checks.check_runs) {
+        if (requiredChecks.size > 0 && !requiredChecks.has(check.name)) {
+          continue;
+        }
+        switch (check.conclusion) {
+          case "success":
+            passed++;
+            break;
+          case "failure":
+            failed++;
+            break;
+          case null:
+            pending++;
+            break;
+        }
+      }
+      const total = passed + failed + pending;
+      const allPassed = failed === 0 && (pending === 0 || requiredChecks.size === 0);
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            total,
+            passed,
+            failed,
+            pending,
+            allPassed,
+            status: allPassed ? "PASS" : failed > 0 ? "FAIL" : "PENDING"
+          }, null, 2)
+        }]
+      };
+    }),
+    import_claude_agent_sdk.tool("merge_pr", "Merge the pull request (only if CI checks pass)", {
+      method: import_zod.z.enum(["merge", "squash", "rebase"]).default("merge").describe("Merge method")
+    }, async (args) => {
+      try {
+        const { data } = await octokit.rest.pulls.merge({
+          ...context2.repo,
+          pull_number: context2.issue.number,
+          merge_method: args.method
+        });
+        return {
+          content: [{
+            type: "text",
+            text: `PR merged successfully (SHA: ${data.sha}). Merged: ${data.merged}.`
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text",
+            text: `Failed to merge PR: ${error.message || "Unknown error"}`
+          }]
+        };
+      }
     })
   ]
 });
@@ -190,6 +258,8 @@ function loadConfig() {
     reviewOnOpen: core.getInput("review_on_open") !== "false",
     reviewOnUpdate: core.getInput("review_on_update") !== "false",
     maxBudgetUsd: parseFloat(core.getInput("max_budget_usd") || "5.00"),
+    autoMerge: core.getInput("auto_merge") === "true",
+    mergeMethod: core.getInput("merge_method") || "merge",
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     openrouterApiKey: process.env.OPENROUTER_API_KEY,
     githubToken
@@ -585,7 +655,14 @@ function shouldRun(context4, config) {
   return false;
 }
 function buildPrompt(config) {
-  const base = "Review this pull request. Analyze the diff, identify issues, add inline comments, and submit a review.";
+  const autoMergeInstructions = config.autoMerge ? `
+## Auto-Merge Enabled
+This action has auto-merge enabled. After submitting your review:
+1. If verdict is APPROVE and no CRITICAL/HIGH issues: Use check_ci_status tool
+2. If CI checks pass: Use merge_pr tool with method="${config.mergeMethod}"
+3. If CI fails or verdict is REQUEST_CHANGES: Do not merge
+` : "";
+  const base = `Review this pull request. Analyze the diff, identify issues, add inline comments, and submit a review.${autoMergeInstructions}`;
   return config.customPrompt ? `${base}
 
 Additional instructions: ${config.customPrompt}` : base;

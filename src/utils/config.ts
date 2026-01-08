@@ -27,6 +27,8 @@ export function loadConfig(): Config {
     reviewOnOpen: core.getInput('review_on_open') !== 'false',
     reviewOnUpdate: core.getInput('review_on_update') !== 'false',
     maxBudgetUsd: parseFloat(core.getInput('max_budget_usd') || '5.00'),
+    autoMerge: core.getInput('auto_merge') === 'true',
+    mergeMethod: (core.getInput('merge_method') || 'merge') as 'merge' | 'squash' | 'rebase',
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     openrouterApiKey: process.env.OPENROUTER_API_KEY,
     githubToken,

@@ -26,6 +26,14 @@ inputs:
     description: 'Maximum budget in USD for the review'
     required: false
     default: '5.00'
+  auto_merge:
+    description: 'Auto-merge PR when review passes and CI checks succeed'
+    required: false
+    default: 'false'
+  merge_method:
+    description: 'Merge method (merge, squash, or rebase)'
+    required: false
+    default: 'merge'
 
 outputs:
   review_id:

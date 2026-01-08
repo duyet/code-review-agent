@@ -43,6 +43,8 @@ Based on industry research from [Sourcery AI](https://sourcery.ai/blog) and [Goo
 | `add_pr_comment` | Add/update PR comment (for progress tracking) |
 | `submit_review` | Submit review with summary and verdict |
 | `security_scan` | Scan code for security vulnerabilities |
+| `check_ci_status` | Check if CI/status checks have passed |
+| `merge_pr` | Merge the PR (if auto-merge enabled) |
 
 ## Review Workflow with Progress Updates
 
@@ -78,7 +80,11 @@ Based on industry research from [Sourcery AI](https://sourcery.ai/blog) and [Goo
     - Overall summary (executive-level)
     - Verdict based on severity distribution
     - All queued inline comments
-11. Update comment with completion and actionable next steps
+11. If auto-merge is enabled and verdict is APPROVE with no CRITICAL/HIGH issues:
+    a. Call check_ci_status to verify all checks passed
+    b. If CI passed: Call merge_pr with configured method
+    c. If CI failed: Add PR comment explaining why merge was skipped
+12. Update comment with completion and actionable next steps
 ```
 
 ## Progress Comment Template
@@ -127,6 +133,11 @@ _Started {timestamp} | Phase {current_phase}/{total_phases}_
 | LOW | {low_count} |
 
 ### Verdict: **{APPROVE | REQUEST_CHANGES | COMMENT}**
+
+### Auto-Merge Status
+{if_auto_merge_enabled}
+- **CI Status**: {PASS | FAIL | PENDING}
+- **Merge Action**: {Merged with {method} | Skipped - {reason}}
 
 ---
 

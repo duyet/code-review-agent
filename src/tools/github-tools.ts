@@ -198,5 +198,92 @@ export const githubMcpServer = createSdkMcpServer({
         return { content: [{ type: 'text', text: `Comment added (ID: ${data.id})` }] };
       }
     ),
+
+    tool(
+      'check_ci_status',
+      'Check if all required CI/status checks have passed',
+      {
+        required_checks: z.array(z.string()).optional().describe('List of required check names (default: all)'),
+        wait_for_timeout_ms: z.number().default(30000).describe('Max time to wait for pending checks (ms)'),
+      },
+      async (args) => {
+        const { data: checks } = await octokit.rest.checks.listForRef({
+          ...context.repo,
+          ref: context.payload.pull_request?.head.sha,
+        });
+
+        let passed = 0;
+        let failed = 0;
+        let pending = 0;
+        const requiredChecks = new Set(args.required_checks || []);
+
+        for (const check of checks.check_runs) {
+          // Skip checks we don't care about
+          if (requiredChecks.size > 0 && !requiredChecks.has(check.name)) {
+            continue;
+          }
+
+          switch (check.conclusion) {
+            case 'success':
+              passed++;
+              break;
+            case 'failure':
+              failed++;
+              break;
+            case null:
+              pending++;
+              break;
+          }
+        }
+
+        const total = passed + failed + pending;
+        const allPassed = failed === 0 && (pending === 0 || requiredChecks.size === 0);
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              total,
+              passed,
+              failed,
+              pending,
+              allPassed,
+              status: allPassed ? 'PASS' : failed > 0 ? 'FAIL' : 'PENDING',
+            }, null, 2),
+          }],
+        };
+      }
+    ),
+
+    tool(
+      'merge_pr',
+      'Merge the pull request (only if CI checks pass)',
+      {
+        method: z.enum(['merge', 'squash', 'rebase']).default('merge').describe('Merge method'),
+      },
+      async (args) => {
+        try {
+          const { data } = await octokit.rest.pulls.merge({
+            ...context.repo,
+            pull_number: context.issue.number,
+            merge_method: args.method,
+          });
+
+          return {
+            content: [{
+              type: 'text',
+              text: `PR merged successfully (SHA: ${data.sha}). Merged: ${data.merged}.`,
+            }],
+          };
+        } catch (error: any) {
+          return {
+            content: [{
+              type: 'text',
+              text: `Failed to merge PR: ${error.message || 'Unknown error'}`,
+            }],
+          };
+        }
+      }
+    ),
   ],
 });

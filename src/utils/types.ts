@@ -9,6 +9,8 @@ export interface Config {
   reviewOnOpen: boolean;
   reviewOnUpdate: boolean;
   maxBudgetUsd: number;
+  autoMerge: boolean;
+  mergeMethod: 'merge' | 'squash' | 'rebase';
   anthropicApiKey?: string;
   openrouterApiKey?: string;
   githubToken: string;
