@@ -74,29 +74,36 @@ async function runLocalReview(): Promise<void> {
 - Changed files: ${changedFiles.join(", ") || "all files"}
 - Review mode: LOCAL DEVELOPMENT
 
-Please review the changed files focusing on:
+IMPORTANT INSTRUCTIONS:
+1. Do NOT explore or read files other than the changed files listed above
+2. Do NOT try to understand the entire project structure
+3. Review ONLY these specific files: ${changedFiles.join(", ")}
+4. Keep your analysis focused and brief
+5. Do NOT make multiple file reads - read each file once and analyze it
+
+Please analyze the changed files for:
 1. TypeScript best practices
 2. GitHub Actions security (in .github/workflows/)
 3. Error handling patterns
 4. Code quality and maintainability
 
-Provide a detailed summary of your findings, organized by severity:
+Provide a concise summary of findings, organized by severity:
 - CRITICAL issues (security vulnerabilities, data loss)
 - HIGH priority (bugs that will fail in production)
 - MEDIUM priority (code quality, maintainability)
 - LOW priority (style, minor improvements)
 
-Do NOT explore the entire codebase. Focus only on the changed files listed above.
+Be brief and efficient. Focus on the files listed above only.
 `;
 
   try {
     const reviewContext: ReviewContext = {
       model: getModelString(provider),
-      maxTurns: 50,
+      maxTurns: 100,
       cwd: path.join(process.cwd(), ".claude"),
       allowedTools: ["Read"],
       permissionMode: "bypassPermissions",
-      maxBudgetUsd: 5.0,
+      maxBudgetUsd: 10.0,
     };
 
     const { totalCost, hadOutput } = await runReview({
