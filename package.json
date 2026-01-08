@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.cjs",
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.cjs --format cjs --target node --external @actions/core --external @actions/github --external zod",
+    "build": "bun build src/index.ts --outfile dist/index.cjs --format cjs --target node",
     "dev": "bun run src/index.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/",
