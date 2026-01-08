@@ -307,6 +307,49 @@ jobs:
 
 </details>
 
+<details>
+<summary><strong>Combined: Auto Review + Mention Trigger (Recommended)</strong></summary>
+
+This workflow handles all scenarios in one file:
+- Auto-review when PR is opened/updated
+- Re-review when someone mentions `@duyetbot`
+
+```yaml
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    # Only run if:
+    # - PR event (opened/sync/reopened)
+    # - OR comment on a PR that mentions the bot
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@duyetbot')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@duyetbot'))
+    steps:
+      - uses: duyet/code-review-agent@v1
+        with:
+          provider: claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</details>
+
 ## Mention Commands
 
 Trigger reviews by mentioning the bot in PR comments:
