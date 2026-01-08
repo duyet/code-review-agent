@@ -3,9 +3,12 @@ import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 
 // Initialize GitHub client
+// Note: GITHUB_TOKEN is validated in config.ts, but we also check here for earlier failure detection
 const githubToken = process.env.GITHUB_TOKEN;
 if (!githubToken) {
-  throw new Error("GITHUB_TOKEN environment variable is required");
+  throw new Error(
+    "GITHUB_TOKEN environment variable is required (expected in GitHub Actions runtime)",
+  );
 }
 const octokit = github.getOctokit(githubToken);
 const context = github.context;
@@ -327,7 +330,7 @@ export const githubMcpServer = createSdkMcpServer({
             ],
           };
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          const errorMessage = error instanceof Error ? error.message : String(error);
           return {
             content: [
               {

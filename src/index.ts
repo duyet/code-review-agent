@@ -30,7 +30,10 @@ async function run(): Promise<void> {
 
     // Fix for ncc-bundled environments: ensure SDK can spawn node processes
     // In bundled code, 'node' may not be in PATH when SDK tries to spawn subprocesses
-    process.env.NODE = process.execPath;
+    // Only set if not already configured to avoid overriding explicit settings
+    if (!process.env.NODE) {
+      process.env.NODE = process.execPath;
+    }
 
     const reviewId = "";
     const commentCount = 0;
