@@ -1,0 +1,44 @@
+name: 'Claude Code Review Agent'
+description: 'AI-powered code review using Claude Agent SDK'
+author: 'duyet'
+
+inputs:
+  provider:
+    description: 'LLM provider (claude, anthropic, openrouter:<model>)'
+    required: false
+    default: 'claude'
+  prompt:
+    description: 'Custom review prompt/instructions'
+    required: false
+  github_username:
+    description: 'Username for comments'
+    required: false
+    default: '@duyetbot'
+  review_on_open:
+    description: 'Auto-review when PR opened'
+    required: false
+    default: 'true'
+  review_on_update:
+    description: 'Re-review when PR updated'
+    required: false
+    default: 'true'
+  max_budget_usd:
+    description: 'Maximum budget in USD for the review'
+    required: false
+    default: '5.00'
+
+outputs:
+  review_id:
+    description: 'ID of created review'
+  comment_count:
+    description: 'Number of inline comments'
+  summary:
+    description: 'Review summary text'
+
+branding:
+  icon: 'code'
+  color: 'purple'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
