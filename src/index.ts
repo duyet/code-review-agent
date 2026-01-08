@@ -1,100 +1,95 @@
+import { unstable_v2_createSession } from '@anthropic-ai/claude-agent-sdk';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { loadConfig, validateConfig } from './utils/config.js';
-import { logger } from './utils/logger.js';
-import { handlePREvent } from './handlers/pr-opened.js';
-import { handleMention, isMentioned } from './handlers/mention.js';
+import { githubMcpServer } from './tools/github-tools.js';
+import { loadConfig } from './utils/config.js';
+import * as path from 'path';
 
 async function run(): Promise<void> {
   try {
     const config = loadConfig();
-    validateConfig(config);
-
     const context = github.context;
-    const eventName = context.eventName;
-    const action = context.payload.action;
 
-    logger.info(`Event: ${eventName}, Action: ${action || 'N/A'}`);
-    logger.info(`Repository: ${context.repo.owner}/${context.repo.repo}`);
-
-    // Handle pull_request events
-    if (eventName === 'pull_request') {
-      if (action === 'opened' && config.reviewOnOpen) {
-        logger.info('PR opened, starting review...');
-        await handlePREvent(config, 'opened');
-      } else if (action === 'synchronize' && config.reviewOnUpdate) {
-        logger.info('PR updated, starting re-review...');
-        await handlePREvent(config, 'updated');
-      } else if (action === 'reopened' && config.reviewOnOpen) {
-        logger.info('PR reopened, starting review...');
-        await handlePREvent(config, 'reopened');
-      } else {
-        logger.info(`Skipping PR action: ${action}`);
-      }
+    // Check if we should run
+    if (!shouldRun(context, config)) {
+      core.info('Skipping: not a relevant event');
       return;
     }
 
-    // Handle issue_comment events (for @mentions)
-    if (eventName === 'issue_comment') {
-      const comment = context.payload.comment;
-      const issue = context.payload.issue;
+    core.info(`Starting code review for PR #${context.issue.number}...`);
 
-      // Only process comments on PRs, not issues
-      if (!issue?.pull_request) {
-        logger.info('Comment is on an issue, not a PR. Skipping.');
-        return;
+    // Create session with V2 SDK
+    const session = unstable_v2_createSession({
+      model: getModelString(config.provider),
+      maxTurns: 50,
+      cwd: path.join(process.cwd(), '.claude'),
+      allowedTools: ['Read', 'WebSearch', 'WebFetch'],
+      mcpServers: { github: githubMcpServer },
+      permissionMode: 'bypassPermissions',
+      maxBudgetUsd: config.maxBudgetUsd,
+    });
+
+    // Send the initial prompt
+    await session.send(buildPrompt(config));
+
+    // Stream the response
+    for await (const message of session.stream()) {
+      if (message.type === 'assistant' && message.message?.content) {
+        for (const block of message.message.content) {
+          if ('text' in block) {
+            core.debug(block.text);
+          }
+        }
       }
 
-      // Only process new comments
-      if (action !== 'created') {
-        logger.info(`Skipping comment action: ${action}`);
-        return;
+      if (message.type === 'result') {
+        if (message.subtype === 'success') {
+          core.info(`Review complete. Cost: $${message.total_cost_usd?.toFixed(4)}`);
+        } else {
+          core.warning(`Review ended: ${message.subtype}`);
+        }
       }
-
-      const commentBody = comment?.body || '';
-      const username = config.githubUsername;
-
-      // Check if the bot is mentioned
-      if (isMentioned(commentBody, username)) {
-        logger.info(`Bot mentioned in comment, processing...`);
-        await handleMention(config, commentBody);
-      } else {
-        logger.info('Bot not mentioned in comment. Skipping.');
-      }
-      return;
     }
 
-    // Handle pull_request_review_comment events
-    if (eventName === 'pull_request_review_comment') {
-      const comment = context.payload.comment;
-
-      if (action !== 'created') {
-        logger.info(`Skipping review comment action: ${action}`);
-        return;
-      }
-
-      const commentBody = comment?.body || '';
-      const username = config.githubUsername;
-
-      if (isMentioned(commentBody, username)) {
-        logger.info(`Bot mentioned in review comment, processing...`);
-        await handleMention(config, commentBody);
-      } else {
-        logger.info('Bot not mentioned in review comment. Skipping.');
-      }
-      return;
-    }
-
-    logger.warning(`Unsupported event: ${eventName}`);
+    // Close the session
+    session.close();
   } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(error.message);
-      logger.error(error);
-    } else {
-      core.setFailed(String(error));
-      logger.error(new Error(String(error)));
-    }
+    core.setFailed(error instanceof Error ? error.message : String(error));
   }
+}
+
+function getModelString(provider: string): string {
+  // Format: "openrouter:model" or "anthropic" or "claude"
+  if (provider === 'anthropic' || provider === 'claude') {
+    return 'claude-sonnet-4-5-20250929';
+  }
+  return provider;
+}
+
+function shouldRun(context: typeof github.context, config: { githubUsername: string; reviewOnOpen: boolean; reviewOnUpdate: boolean }): boolean {
+  const { eventName, payload } = context;
+
+  // PR events
+  if (eventName === 'pull_request') {
+    const action = payload.action;
+    if (action === 'opened' && config.reviewOnOpen) return true;
+    if ((action === 'synchronize' || action === 'reopened') && config.reviewOnUpdate) return true;
+    return false;
+  }
+
+  // Comment mentions
+  if (eventName === 'issue_comment' || eventName === 'pull_request_review_comment') {
+    const comment = payload.comment?.body || '';
+    const isPR = eventName === 'pull_request_review_comment' || payload.issue?.pull_request;
+    return isPR && comment.includes(config.githubUsername.replace('@', ''));
+  }
+
+  return false;
+}
+
+function buildPrompt(config: { customPrompt?: string }): string {
+  const base = 'Review this pull request. Analyze the diff, identify issues, add inline comments, and submit a review.';
+  return config.customPrompt ? `${base}\n\nAdditional instructions: ${config.customPrompt}` : base;
 }
 
 run();
