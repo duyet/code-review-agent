@@ -1,4 +1,4 @@
-import { unstable_v2_createSession } from '@anthropic-ai/claude-agent-sdk';
+import { query } from '@anthropic-ai/claude-agent-sdk';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { githubMcpServer } from './tools/github-tools.js';
@@ -18,22 +18,22 @@ async function run(): Promise<void> {
 
     core.info(`Starting code review for PR #${context.issue.number}...`);
 
-    // Create session with V2 SDK
-    const session = unstable_v2_createSession({
-      model: getModelString(config.provider),
-      maxTurns: 50,
-      cwd: path.join(process.cwd(), '.claude'),
-      allowedTools: ['Read', 'WebSearch', 'WebFetch'],
-      mcpServers: { github: githubMcpServer },
-      permissionMode: 'bypassPermissions',
-      maxBudgetUsd: config.maxBudgetUsd,
-    });
+    let reviewId = '';
+    let commentCount = 0;
 
-    // Send the initial prompt
-    await session.send(buildPrompt(config));
-
-    // Stream the response
-    for await (const message of session.stream()) {
+    // Use V1 query with full options
+    for await (const message of query({
+      prompt: buildPrompt(config),
+      options: {
+        model: getModelString(config.provider),
+        maxTurns: 50,
+        cwd: path.join(process.cwd(), '.claude'),
+        allowedTools: ['Read', 'WebSearch', 'WebFetch'],
+        mcpServers: { github: githubMcpServer },
+        permissionMode: 'bypassPermissions',
+        maxBudgetUsd: config.maxBudgetUsd,
+      },
+    })) {
       if (message.type === 'assistant' && message.message?.content) {
         for (const block of message.message.content) {
           if ('text' in block) {
@@ -51,8 +51,8 @@ async function run(): Promise<void> {
       }
     }
 
-    // Close the session
-    session.close();
+    core.setOutput('review_id', reviewId);
+    core.setOutput('comment_count', commentCount);
   } catch (error) {
     core.setFailed(error instanceof Error ? error.message : String(error));
   }

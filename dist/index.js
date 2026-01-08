@@ -526,17 +526,20 @@ async function run() {
       return;
     }
     core2.info(`Starting code review for PR #${context4.issue.number}...`);
-    const session = import_claude_agent_sdk2.unstable_v2_createSession({
-      model: getModelString(config.provider),
-      maxTurns: 50,
-      cwd: join(process.cwd(), ".claude"),
-      allowedTools: ["Read", "WebSearch", "WebFetch"],
-      mcpServers: { github: githubMcpServer },
-      permissionMode: "bypassPermissions",
-      maxBudgetUsd: config.maxBudgetUsd
-    });
-    await session.send(buildPrompt(config));
-    for await (const message of session.stream()) {
+    let reviewId = "";
+    let commentCount = 0;
+    for await (const message of import_claude_agent_sdk2.query({
+      prompt: buildPrompt(config),
+      options: {
+        model: getModelString(config.provider),
+        maxTurns: 50,
+        cwd: join(process.cwd(), ".claude"),
+        allowedTools: ["Read", "WebSearch", "WebFetch"],
+        mcpServers: { github: githubMcpServer },
+        permissionMode: "bypassPermissions",
+        maxBudgetUsd: config.maxBudgetUsd
+      }
+    })) {
       if (message.type === "assistant" && message.message?.content) {
         for (const block of message.message.content) {
           if ("text" in block) {
@@ -552,7 +555,8 @@ async function run() {
         }
       }
     }
-    session.close();
+    core2.setOutput("review_id", reviewId);
+    core2.setOutput("comment_count", commentCount);
   } catch (error) {
     core2.setFailed(error instanceof Error ? error.message : String(error));
   }
