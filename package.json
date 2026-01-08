@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "AI-powered code review GitHub Action using Claude Agent SDK",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.js --format cjs --external @actions/core --external @actions/github --external @anthropic-ai/claude-agent-sdk --external zod",
+    "build": "bun build src/index.ts --outfile dist/index.cjs --format cjs --external @actions/core --external @actions/github --external @anthropic-ai/claude-agent-sdk --external zod",
     "dev": "bun run src/index.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/",
