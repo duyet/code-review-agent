@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: duyet/code-review-agent@main
         with:
-          provider: openrouter:anthropic/claude-sonnet-4
+          provider: openrouter:@preset/claude-code-github-action
           prompt: |
             This is the code-review-agent repository itself.
             Focus on:
