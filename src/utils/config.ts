@@ -41,6 +41,7 @@ export function validateConfig(config: Config): void {
   }
 
   if (!config.githubUsername.startsWith("@")) {
-    core.warning("github_username should start with @, adding it automatically");
+    core.warning("github_username should start with @, normalizing automatically");
+    config.githubUsername = `@${config.githubUsername}`;
   }
 }

@@ -35,9 +35,6 @@ async function run(): Promise<void> {
       process.env.NODE = process.execPath;
     }
 
-    const reviewId = "";
-    const commentCount = 0;
-
     // Use V1 query with full options
     for await (const message of query({
       prompt: buildPrompt(config),
@@ -67,9 +64,6 @@ async function run(): Promise<void> {
         }
       }
     }
-
-    core.setOutput("review_id", reviewId);
-    core.setOutput("comment_count", commentCount);
   } catch (error) {
     core.setFailed(error instanceof Error ? error.message : String(error));
   }

@@ -1,7 +1,7 @@
+import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execSync } from "node:child_process";
-import { runReview, getModelString, type ReviewContext } from "./utils/review-common.js";
+import { type ReviewContext, getModelString, runReview } from "./utils/review-common.js";
 
 async function runLocalReview(): Promise<void> {
   // Load environment variables from .env.local if present
@@ -110,6 +110,7 @@ Be brief and efficient. Focus on the files listed above only.
       prompt: `${customPrompt}\n${contextMessage}`,
       context: reviewContext,
       onMessage: (message) => {
+        // biome-ignore lint/suspicious/noExplicitAny: SDK message types are not exported
         const msg = message as any;
         if (msg.type === "system" && msg.subtype === "init") {
           console.log(`   Session ID: ${msg.session_id}`);
@@ -129,7 +130,9 @@ Be brief and efficient. Focus on the files listed above only.
     });
 
     if (!hadOutput) {
-      console.log("\n⚠️ No review output was generated. This might indicate an issue with the API key or model.");
+      console.log(
+        "\n⚠️ No review output was generated. This might indicate an issue with the API key or model.",
+      );
     }
 
     if (totalCost > 0) {
@@ -137,7 +140,7 @@ Be brief and efficient. Focus on the files listed above only.
     }
 
     console.log(`\n📊 Total cost: $${totalCost.toFixed(4)}`);
-  } catch (error) {
+  } catch (_error) {
     console.error("Failed to run review");
     process.exit(1);
   }

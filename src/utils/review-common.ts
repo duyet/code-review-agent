@@ -26,14 +26,16 @@ export interface ReviewOptions {
  * Common function to run a code review using the Claude Agent SDK
  * Used by both GitHub Actions and local review modes
  */
-export async function runReview(options: ReviewOptions): Promise<{ totalCost: number; hadOutput: boolean }> {
+export async function runReview(
+  options: ReviewOptions,
+): Promise<{ totalCost: number; hadOutput: boolean }> {
   const { prompt, context, onMessage, onOutput, onError } = options;
 
   let totalCost = 0;
   let hadOutput = false;
 
   try {
-    const queryOptions: any = {
+    const queryOptions: Record<string, unknown> = {
       model: context.model,
       maxTurns: context.maxTurns,
       cwd: context.cwd,
@@ -52,7 +54,9 @@ export async function runReview(options: ReviewOptions): Promise<{ totalCost: nu
       }
 
       // Process assistant messages
+      // biome-ignore lint/suspicious/noExplicitAny: SDK message types are not exported
       if ((message as any).type === "assistant" && (message as any).message?.content) {
+        // biome-ignore lint/suspicious/noExplicitAny: SDK message types are not exported
         for (const block of (message as any).message.content) {
           if (block.type === "text") {
             hadOutput = true;
@@ -64,8 +68,11 @@ export async function runReview(options: ReviewOptions): Promise<{ totalCost: nu
       }
 
       // Track completion and cost
+      // biome-ignore lint/suspicious/noExplicitAny: SDK message types are not exported
       if ((message as any).type === "result") {
+        // biome-ignore lint/suspicious/noExplicitAny: SDK message types are not exported
         if ((message as any).subtype === "success") {
+          // biome-ignore lint/suspicious/noExplicitAny: SDK message types are not exported
           totalCost = (message as any).total_cost_usd || 0;
         }
       }
@@ -119,7 +126,9 @@ This action has auto-merge enabled. After submitting your review:
   const contextSection = options.context ? `\n\n${options.context}` : "";
 
   const base = `Review this code. Analyze for security vulnerabilities, bugs, and code quality issues. Add inline comments and submit a review.${autoMergeInstructions}`;
-  const withCustom = options.customPrompt ? `${base}\n\nAdditional instructions: ${options.customPrompt}` : base;
+  const withCustom = options.customPrompt
+    ? `${base}\n\nAdditional instructions: ${options.customPrompt}`
+    : base;
 
   return withCustom + contextSection;
 }

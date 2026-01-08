@@ -33,7 +33,7 @@ const SECURITY_PATTERNS = [
     severity: "CRITICAL",
   },
   {
-    pattern: /\$\{[^}]+\}[^;]*(?:SELECT|INSERT|UPDATE|DELETE)/gi,
+    pattern: /(?:SELECT|INSERT|UPDATE|DELETE)\s+.*\$\{[^}]+\}/gi,
     type: "SQL_INJECTION",
     severity: "HIGH",
   },
