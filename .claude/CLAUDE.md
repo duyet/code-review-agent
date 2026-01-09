@@ -274,6 +274,52 @@ Always praise good patterns when you see them:
 - "Excellent error handling - very defensive programming"
 - "Clean type definitions make this self-documenting"
 
+## Local Development Review
+
+For testing and local development, use the `bun run review` command to run code reviews without a GitHub PR context.
+
+### Setup
+```bash
+# Create .env.local with API credentials
+cp .env.example .env.local
+# Edit .env.local to add your API key:
+# OPENROUTER_API_KEY=sk-...  OR  ANTHROPIC_API_KEY=sk-...
+```
+
+### Usage
+```bash
+# Review changed files (detects from git diff)
+# Default provider: openrouter:openrouter/auto (auto-routes to best available model)
+bun run review
+
+# Override with a specific provider
+PROVIDER="openrouter:anthropic/claude-sonnet-4-5-20250929" bun run review
+PROVIDER="anthropic" bun run review
+```
+
+### Configuration
+Create `.claude/prompt.md` to customize the review prompt:
+```markdown
+# Custom Review Instructions
+Review this code for:
+1. Security vulnerabilities
+2. Performance optimizations
+3. Testing coverage
+4. Code clarity
+```
+
+The local review will:
+- Auto-detect changed files from `git diff main` or `git diff HEAD~1`
+- Analyze only changed files (not the entire codebase)
+- Provide the same severity-based findings as GitHub PR reviews
+- Track API usage costs
+
+### Shared Review Logic
+Both local and GitHub Action modes use common utilities from `src/utils/review-common.ts`:
+- `runReview()` - Execute SDK query with message handling
+- `getModelString()` - Parse provider configuration into model identifier
+- `buildReviewPrompt()` - Generate review prompt with context
+
 ## Sources
 - [Sourcery AI Blog](https://sourcery.ai/blog) - AI code review best practices
 - [Google Gemini Code Assist Docs](https://developers.google.com/gemini-code-assist/docs/review-github-code) - Official review patterns

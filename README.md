@@ -506,3 +506,116 @@ Trigger reviews by mentioning the bot in PR comments:
 ## License
 
 MIT
+
+---
+
+## Local Development
+
+### Setup
+
+```bash
+# Install dependencies
+bun install
+
+# Set your API key (choose one)
+export ANTHROPIC_API_KEY=your_key_here  # for Claude
+export OPENROUTER_API_KEY=your_key_here # for OpenRouter
+```
+
+### Run Local Code Review
+
+Test the code review agent on your local codebase without needing a GitHub PR:
+
+```bash
+# Review changes from current branch (vs main or HEAD~1)
+# Uses openrouter:openrouter/auto by default (auto-routes to best available model)
+bun run review
+
+# Specify a different provider
+PROVIDER=openrouter:anthropic/claude-sonnet-4-5-20250929 bun run review
+PROVIDER=anthropic bun run review
+```
+
+#### Local Review Features
+
+The local review mode:
+- Auto-detects changed files using `git diff` (compares against `main` or `HEAD~1`)
+- Focuses analysis only on changed files (not the entire codebase)
+- Provides the same severity-based findings as GitHub PR reviews
+- Tracks API costs and displays them at completion
+- Supports custom prompts via `.claude/prompt.md`
+
+#### Custom Review Prompts
+
+Create `.claude/prompt.md` to customize review focus:
+
+```markdown
+# Security-Focused Review
+
+Review this code specifically for:
+- SQL injection vulnerabilities
+- Authentication/authorization issues
+- Secrets or API keys in code
+- Unsafe command execution
+- Cross-site scripting (XSS) risks
+```
+
+#### Environment Variables for Local Review
+
+Create `.env.local` for persistent settings:
+
+```bash
+# .env.local
+# Default provider is openrouter:openrouter/auto (auto-routes to best available model)
+# Override with:
+PROVIDER=openrouter:openrouter/auto
+OPENROUTER_API_KEY=sk-or-v1-...
+GITHUB_TOKEN=ghp_...  # Optional, not needed for local review
+```
+
+Then run: `bun run review`
+
+**Note**: The `openrouter:openrouter/auto` provider is recommended for local reviews as it:
+- Automatically selects the best available model
+- No per-model cost difference
+- Great for development and testing
+
+### Development Commands
+
+```bash
+# Type checking
+bun run typecheck
+
+# Linting
+bun run lint
+
+# Auto-fix lint issues
+bun run lint:fix
+
+# Format code
+bun run format
+
+# Build for production
+bun run build
+```
+
+### `.claude` Directory
+
+The agent uses the `.claude/` directory for configuration:
+
+```
+.claude/
+├── prompt.md          # System prompt for code reviewer
+├── skills/            # Skill definitions
+│   ├── security-review.md
+│   ├── typescript-review.md
+│   └── github-actions-review.md
+└── CLAUDE.md          # Project-specific context
+```
+
+The Claude Agent SDK automatically loads:
+- `prompt.md` → System prompt
+- `skills/*.md` → Available skills
+- `CLAUDE.md` → Project context
+
+You can customize the review behavior by editing these files.

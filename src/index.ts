@@ -28,8 +28,12 @@ async function run(): Promise<void> {
 
     core.info(`Starting code review for PR #${context.issue.number}...`);
 
-    const reviewId = "";
-    const commentCount = 0;
+    // Fix for ncc-bundled environments: ensure SDK can spawn node processes
+    // In bundled code, 'node' may not be in PATH when SDK tries to spawn subprocesses
+    // Only set if not already configured to avoid overriding explicit settings
+    if (!process.env.NODE) {
+      process.env.NODE = process.execPath;
+    }
 
     // Use V1 query with full options
     for await (const message of query({
@@ -60,9 +64,6 @@ async function run(): Promise<void> {
         }
       }
     }
-
-    core.setOutput("review_id", reviewId);
-    core.setOutput("comment_count", commentCount);
   } catch (error) {
     core.setFailed(error instanceof Error ? error.message : String(error));
   }
